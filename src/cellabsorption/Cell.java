@@ -22,10 +22,6 @@ public class Cell {
     public Ellipse getShape() {
         return this.shape;
     }
-    public void grow(double amount) {
-        setRadius(radius + amount);
-    }
-
     public void setRadius(double newRadius) {
         if (newRadius < 0) {
             newRadius = 0;
@@ -48,6 +44,49 @@ public class Cell {
                 + (Math.random() - 0.5) * WIGGLINESS
                 + turnTowardCenter * Math.tanh(distToCenter / WANDER_FROM_CENTER));
     }
+
+    public Point getCenter() {
+        return shape.getCenter();
+    }
+
+    /**
+     * Causes this cell to interact with the other given cell. If the two
+     * cells overlap and both have a positive radius, then the larger cell
+     * absorbs area from the smaller cell so that the total area is the
+     * same, but the two cells are now tangent.
+     */
+    public void interactWith(Cell otherCell) {
+        if (radius == 0 || otherCell.radius == 0) {
+            return;
+        }
+        if (overlapAmount(otherCell) < 0) {
+            return;
+        }
+
+        if (radius > otherCell.radius) {
+            absorb(otherCell);
+        } else {
+            otherCell.absorb(this);
+        }
+    }
+
+    private double overlapAmount(Cell otherCell) {
+        return radius + otherCell.radius - getCenter().distance(otherCell.getCenter());
+    }
+
+    private void absorb(Cell otherCell) {
+        double d = getCenter().distance(otherCell.getCenter());
+        double a = sqr(radius) + sqr(otherCell.radius);
+        double newRadius = (d + Math.sqrt(2 * a - sqr(d))) / 2;
+
+        setRadius(newRadius);
+        otherCell.setRadius(d - newRadius);
+    }
+
+    private static double sqr(double x) {
+        return x * x;
+    }
+    
     private static double normalizeRadians(double theta) {
         double pi2 = Math.PI * 2;
         return ((theta + Math.PI) % pi2 + pi2) % pi2 - Math.PI;
